@@ -1,0 +1,18 @@
+# credentials - never commit these
+session_cookies.json
+
+# scraped output
+tweets.json
+tweets.csv
+scraper.log
+
+# python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.env
+
+# os
+.DS_Store
+Thumbs.db
