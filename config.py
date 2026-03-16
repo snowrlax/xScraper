@@ -4,6 +4,9 @@
 # other modules just to change a target account or delay.
 # ─────────────────────────────────────────────────────────────
 
+# ── Debug ────────────────────────────────────────────────────
+DEBUG_MODE    = True                # Set to False to disable verbose logging
+
 # ── Target ────────────────────────────────────────────────────
 TARGET_HANDLE = "marclou"          # without the @
 MAX_TWEETS    = 5                   # stop after collecting this many (set to 5 for debugging)
@@ -32,6 +35,7 @@ PAGE_LOAD_TIMEOUT = 60_000          # ms — how long to wait for page load
 COOKIES_FILE  = "session_cookies.json"   # saved after first login
 OUTPUT_JSON   = "tweets.json"
 OUTPUT_CSV    = "tweets.csv"
+OUTPUT_USERS  = "users.json"             # deduplicated user profiles
 
 # ── X internal API patterns ───────────────────────────────────
 # When X loads a timeline it fires XHR requests to these URL

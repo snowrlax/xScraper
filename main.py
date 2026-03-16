@@ -15,7 +15,8 @@ import asyncio
 
 from browser import create_stealth_page, save_cookies
 from scroller import scrape_profile
-from storage import save, plain_text_for_analyzer
+from interceptor import get_collected_users
+from storage import save, plain_text_for_analyzer, get_tweet_stats
 from logger import log
 import config
 
@@ -33,8 +34,19 @@ async def run() -> None:
             log.warning("No tweets collected. Check cookies or target handle.")
             return
 
-        save(tweets)
-        log.info(f"Run complete — {len(tweets)} tweets saved.")
+        # Get collected users for users.json
+        users = get_collected_users()
+
+        # Save all data
+        save(tweets, users)
+        log.info(f"Run complete — {len(tweets)} tweets, {len(users)} users saved.")
+
+        # Log stats
+        stats = get_tweet_stats(tweets)
+        log.info(f"Stats: {stats.get('original_tweets', 0)} original, "
+                 f"{stats.get('replies', 0)} replies, "
+                 f"{stats.get('retweets', 0)} RTs, "
+                 f"{stats.get('quote_tweets', 0)} quotes")
 
         preview = plain_text_for_analyzer(tweets)
         log.info(f"Style analyzer text ready ({len(preview)} chars)")

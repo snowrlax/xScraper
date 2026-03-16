@@ -66,6 +66,7 @@ monitor.py        → Real-time progress dashboard
 ## Configuration (config.py)
 
 All settings centralized in `config.py`:
+- `DEBUG_MODE` - Enable verbose logging of raw GraphQL responses and tweet node structures
 - `TARGET_HANDLE` - Profile to scrape (no @)
 - `MAX_TWEETS` - Collection limit
 - `HEADLESS` - True for headless, False for visible browser
@@ -83,22 +84,42 @@ All settings centralized in `config.py`:
 ```json
 {
   "tweet_id": "string",
+  "conversation_id": "string",
   "text": "string",
+  "full_text": "string|null",
   "created_at": "string",
+  "scraped_at": "string",
+  "lang": "string",
+  "source": "string",
+  "author_id": "string",
+  "author_handle": "string",
+  "author_name": "string",
+  "author_verified": "boolean",
   "likes": "number",
   "retweets": "number",
   "replies": "number",
-  "views": "string",
+  "quotes": "number",
+  "bookmarks": "number",
+  "views": "number",
   "is_retweet": "boolean",
   "is_reply": "boolean",
-  "user_handle": "string",
+  "is_quote": "boolean",
+  "is_self_reply": "boolean",
+  "is_pinned": "boolean",
+  "hashtags": ["string"],
+  "mentions": ["string"],
+  "urls": [{"display": "string", "expanded": "string"}],
+  "media": [{"type": "string", "url": "string"}],
+  "quoted_tweet": "object|null",
+  "retweeted_tweet": "object|null",
   "tweet_url": "string"
 }
 ```
 
 ## Output Files
 
-- `tweets.json` - Full structured data
+- `tweets.json` - Full structured tweet data
 - `tweets.csv` - Spreadsheet-friendly format
+- `users.json` - Deduplicated user profiles collected during scraping
 - `session_cookies.json` - Browser session (auto-saved)
-- `scraper.log` - Persistent log file
+- `scraper.log` - Persistent log file (includes debug output when `DEBUG_MODE=True`)

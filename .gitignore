@@ -4,6 +4,8 @@ session_cookies.json
 # scraped output
 tweets.json
 tweets.csv
+users.json
+session_cookies.json
 scraper.log
 
 # python
