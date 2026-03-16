@@ -21,10 +21,12 @@
 # ─────────────────────────────────────────────────────────────
 
 import asyncio
+import json
 from typing import Callable
 from playwright.async_api import Page, Response
 
 import config
+from logger import log
 
 
 def attach_interceptor(page: Page, on_tweets: Callable[[list[dict]], None]) -> None:
@@ -48,6 +50,10 @@ def _is_tweet_endpoint(url: str) -> bool:
 
 
 def _extract_tweets(data: dict) -> list[dict]:
+    # DEBUG: Log the raw GraphQL response (first 5000 chars to avoid huge logs)
+    raw_json = json.dumps(data, indent=2)
+    log.debug(f"[RAW RESPONSE] (truncated):\n{raw_json[:5000]}")
+
     found = []
     _walk(data, found)
     return found
@@ -77,6 +83,16 @@ def _parse_tweet_node(result: dict) -> dict:
     legacy = result.get("legacy", {})
     core = result.get("core", {})
     user = core.get("user_results", {}).get("result", {}).get("legacy", {}) or {}
+
+    # DEBUG: Log the full tweet result structure for analysis
+    log.debug(f"[TWEET NODE] __typename: {result.get('__typename')}")
+    log.debug(f"[TWEET NODE] All keys: {list(result.keys())}")
+    log.debug(f"[TWEET NODE] core: {json.dumps(core, indent=2) if core else 'EMPTY'}")
+
+    # Check alternative user paths X might use
+    for alt_key in ["author", "user", "author_results", "user_result"]:
+        if alt_key in result:
+            log.debug(f"[TWEET NODE] Found '{alt_key}': {json.dumps(result[alt_key], indent=2)[:500]}")
 
     if not legacy:
         return None

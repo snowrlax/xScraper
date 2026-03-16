@@ -5,11 +5,11 @@
 # ─────────────────────────────────────────────────────────────
 
 # ── Target ────────────────────────────────────────────────────
-TARGET_HANDLE = "elonmusk"          # without the @
-MAX_TWEETS    = 200                 # stop after collecting this many
+TARGET_HANDLE = "marclou"          # without the @
+MAX_TWEETS    = 5                   # stop after collecting this many (set to 5 for debugging)
 
 # ── Browser ───────────────────────────────────────────────────
-HEADLESS      = True                # False = you can watch the browser
+HEADLESS      = False                # False = you can watch the browser
 BROWSER_WIDTH  = 1280
 BROWSER_HEIGHT = 900
 
