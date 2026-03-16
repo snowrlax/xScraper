@@ -123,3 +123,57 @@ All settings centralized in `config.py`:
 - `users.json` - Deduplicated user profiles collected during scraping
 - `session_cookies.json` - Browser session (auto-saved)
 - `scraper.log` - Persistent log file (includes debug output when `DEBUG_MODE=True`)
+
+## Analytics Tool
+
+The `analyzer/` package provides visualization and AI-powered tweet analysis.
+
+### Dashboard (Streamlit)
+
+```bash
+# Start the analytics dashboard
+streamlit run analyzer/dashboard.py
+```
+
+Visualizations:
+- Engagement over time (likes/retweets/views with rolling averages)
+- Posting time heatmap (hour vs day-of-week)
+- Top performing content table
+- Content type breakdown (original/replies/quotes/retweets)
+- Hashtag and mention frequency charts
+
+### Interactive CLI
+
+```bash
+# Set OpenAI API key first
+export OPENAI_API_KEY="your-key"
+
+# Start interactive chat
+python -m analyzer.cli chat
+
+# One-shot commands
+python -m analyzer.cli style       # Analyze writing patterns
+python -m analyzer.cli hooks       # Extract top-performing hooks
+python -m analyzer.cli engagement  # What drives engagement
+python -m analyzer.cli profile     # Generate user profile
+python -m analyzer.cli generate "topic"  # Generate tweets in user's voice
+python -m analyzer.cli check       # Verify API key is configured
+```
+
+### Analyzer Architecture
+
+```
+analyzer/
+    dashboard.py          # Streamlit app
+    data_loader.py        # Load/parse tweets.json
+    metrics.py            # Engagement calculations
+    charts.py             # Plotly chart builders
+    config.py             # LLM settings
+
+    cli/
+        main.py           # CLI entry point
+        chat.py           # Interactive chat loop
+        llm_client.py     # OpenAI API wrapper
+        context_builder.py # Build LLM context from tweets
+        prompts.py        # System prompts for analysis
+```
