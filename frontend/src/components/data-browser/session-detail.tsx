@@ -29,17 +29,17 @@ export function SessionDetail({ detail, loading }: SessionDetailProps) {
   const { stats } = detail;
 
   const statItems = [
-    { label: "Total Tweets", value: stats.total_tweets },
-    { label: "Original", value: stats.original_tweets },
-    { label: "Replies", value: stats.replies },
-    { label: "Retweets", value: stats.retweets },
-    { label: "Quotes", value: stats.quote_tweets },
-    { label: "Threads", value: stats.self_replies_threads },
-    { label: "Total Likes", value: stats.total_likes.toLocaleString() },
-    { label: "Avg Likes", value: stats.avg_likes },
-    { label: "Total Views", value: stats.total_views.toLocaleString() },
-    { label: "Avg Views", value: stats.avg_views.toLocaleString() },
-    { label: "Users Found", value: stats.users_saved },
+    { label: "Total Tweets", value: stats.total_tweets ?? 0 },
+    { label: "Original", value: stats.original_tweets ?? 0 },
+    { label: "Replies", value: stats.replies ?? 0 },
+    { label: "Retweets", value: stats.retweets ?? 0 },
+    { label: "Quotes", value: stats.quote_tweets ?? 0 },
+    { label: "Threads", value: stats.self_replies_threads ?? 0 },
+    { label: "Total Likes", value: (stats.total_likes ?? 0).toLocaleString() },
+    { label: "Avg Likes", value: stats.avg_likes ?? 0 },
+    { label: "Total Views", value: (stats.total_views ?? 0).toLocaleString() },
+    { label: "Avg Views", value: (stats.avg_views ?? 0).toLocaleString() },
+    { label: "Users Found", value: stats.users_saved ?? 0 },
   ];
 
   return (
