@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrapeForm } from "@/components/scrape-form";
 import { ProgressFeed } from "@/components/progress-feed";
 import { ResultsSummary } from "@/components/results-summary";
+import { DataBrowser } from "@/components/data-browser/data-browser";
 import {
   fetchConfig,
   triggerLogin,
@@ -23,6 +24,8 @@ export default function Home() {
   const [events, setEvents] = useState<ScrapeEvent[]>([]);
   const [stats, setStats] = useState<ScrapeStats | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [sessionPath, setSessionPath] = useState<string | null>(null);
+  const [refreshSignal, setRefreshSignal] = useState(0);
 
   useEffect(() => {
     fetchConfig()
@@ -50,17 +53,20 @@ export default function Home() {
   }, []);
 
   const handleScrape = useCallback(
-    async (request: { target_handle: string; max_tweets: number; headless: boolean }) => {
+    async (request: { target_handle: string; max_tweets: number; headless: boolean; scroll_speed: number }) => {
       setState("scraping");
       setEvents([]);
       setStats(null);
       setError(null);
+      setSessionPath(null);
 
       await startScrape(request, (event) => {
         setEvents((prev) => [...prev, event]);
 
         if (event.type === "complete") {
           setStats(event.stats);
+          setSessionPath(event.session_path);
+          setRefreshSignal((prev) => prev + 1);
           setState("idle");
         } else if (event.type === "auth_failed") {
           setState("login_required");
@@ -135,7 +141,10 @@ export default function Home() {
         <ProgressFeed events={events} />
 
         {/* Results */}
-        {stats && <ResultsSummary stats={stats} />}
+        {stats && <ResultsSummary stats={stats} sessionPath={sessionPath} />}
+
+        {/* Data Browser */}
+        <DataBrowser refreshSignal={refreshSignal} />
       </div>
     </main>
   );

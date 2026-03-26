@@ -84,16 +84,19 @@ async def scrape_profile(
 
     # ── Scroll loop ─────────────────────────────────────
     no_new_streak = 0
+    new_in_last_batch[0] = 0  # Clear stale count from initial page load
 
     while len(collected) < params.max_tweets:
-        scroll_px = random.randint(600, 900)
-        await page.evaluate(f"window.scrollBy(0, {scroll_px})")
+        await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
 
-        delay = random.uniform(config.SCROLL_DELAY_MIN, config.SCROLL_DELAY_MAX)
+        delay = random.uniform(config.SCROLL_DELAY_MIN, config.SCROLL_DELAY_MAX) * params.scroll_speed
         await asyncio.sleep(delay)
 
         try:
-            await page.wait_for_load_state("networkidle", timeout=8_000)
+            await page.wait_for_response(
+                lambda r: any(p in r.url for p in config.XHR_INTERCEPT_PATTERNS),
+                timeout=8_000,
+            )
         except Exception:
             pass
 

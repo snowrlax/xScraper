@@ -18,6 +18,12 @@ const TWEET_COUNT_OPTIONS = [
   { value: "1000", label: "1000 tweets" },
 ];
 
+const SCROLL_SPEED_OPTIONS = [
+  { value: "1.5", label: "Slow" },
+  { value: "1.0", label: "Normal" },
+  { value: "0.5", label: "Fast" },
+];
+
 interface ScrapeFormProps {
   manualModeAvailable: boolean;
   isDisabled: boolean;
@@ -25,6 +31,7 @@ interface ScrapeFormProps {
     target_handle: string;
     max_tweets: number;
     headless: boolean;
+    scroll_speed: number;
   }) => void;
 }
 
@@ -36,6 +43,7 @@ export function ScrapeForm({
   const [handle, setHandle] = useState("");
   const [maxTweets, setMaxTweets] = useState("100");
   const [mode, setMode] = useState<"headless" | "manual">("headless");
+  const [scrollSpeed, setScrollSpeed] = useState("1.0");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,6 +53,7 @@ export function ScrapeForm({
       target_handle: cleanHandle,
       max_tweets: parseInt(maxTweets, 10),
       headless: mode === "headless",
+      scroll_speed: parseFloat(scrollSpeed),
     });
   };
 
@@ -62,11 +71,24 @@ export function ScrapeForm({
         </div>
 
         <Select value={maxTweets} onValueChange={(v) => { if (v) setMaxTweets(v); }} disabled={isDisabled}>
-          <SelectTrigger className="w-[160px] h-10">
+          <SelectTrigger className="w-[140px] h-10">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             {TWEET_COUNT_OPTIONS.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={scrollSpeed} onValueChange={(v) => { if (v) setScrollSpeed(v); }} disabled={isDisabled}>
+          <SelectTrigger className="w-[120px] h-10">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {SCROLL_SPEED_OPTIONS.map((opt) => (
               <SelectItem key={opt.value} value={opt.value}>
                 {opt.label}
               </SelectItem>

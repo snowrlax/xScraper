@@ -9,6 +9,7 @@ export interface ScrapeRequest {
   target_handle: string;
   max_tweets: number;
   headless: boolean;
+  scroll_speed: number;
 }
 
 export interface ScrapeStats {
@@ -31,7 +32,7 @@ export type ScrapeEvent =
   | { type: "progress"; new: number; total: number; elapsed_seconds: number }
   | { type: "rate_limited"; empty_scrolls: number; total: number; elapsed_seconds: number }
   | { type: "auth_failed"; reason: string }
-  | { type: "complete"; total: number; stats: ScrapeStats }
+  | { type: "complete"; total: number; stats: ScrapeStats; session_path: string }
   | { type: "error"; message: string };
 
 export async function fetchConfig(): Promise<AppConfig> {
@@ -48,6 +49,72 @@ export async function triggerLogin(): Promise<{ status: string; message: string 
   if (!res.ok) throw new Error("Login request failed");
   return res.json();
 }
+
+// ── Data Browser types ───────────────────────────────────
+
+export interface SessionSummary {
+  session_id: string;
+  scraped_at: string;
+  tweet_count: number;
+  file_size_bytes: number;
+}
+
+export interface UserSummary {
+  handle: string;
+  session_count: number;
+  sessions: SessionSummary[];
+}
+
+export interface DataTreeResponse {
+  users: UserSummary[];
+}
+
+export interface TweetData {
+  tweet_id: string;
+  created_at: string;
+  text: string;
+  author_handle: string;
+  author_name: string;
+  likes: number;
+  retweets: number;
+  replies: number;
+  quotes: number;
+  bookmarks: number;
+  views: number;
+  is_retweet: boolean;
+  is_reply: boolean;
+  is_quote: boolean;
+  is_self_reply: boolean;
+  tweet_url: string;
+}
+
+export interface SessionDetailResponse {
+  handle: string;
+  session_id: string;
+  scraped_at: string;
+  stats: ScrapeStats;
+  tweets: TweetData[];
+  users_count: number;
+}
+
+// ── Data Browser functions ───────────────────────────────
+
+export async function fetchDataTree(): Promise<DataTreeResponse> {
+  const res = await fetch(`${API_BASE}/api/data/tree`);
+  if (!res.ok) throw new Error("Failed to fetch data tree");
+  return res.json();
+}
+
+export async function fetchSessionDetail(
+  handle: string,
+  sessionId: string,
+): Promise<SessionDetailResponse> {
+  const res = await fetch(`${API_BASE}/api/data/${handle}/sessions/${sessionId}`);
+  if (!res.ok) throw new Error("Failed to fetch session detail");
+  return res.json();
+}
+
+// ── Scrape functions ─────────────────────────────────────
 
 export async function startScrape(
   request: ScrapeRequest,
