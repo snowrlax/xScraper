@@ -4,80 +4,121 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-xScraper is a Python-based Twitter/X scraper using Playwright for browser automation. It intercepts GraphQL API responses (not DOM scraping) to collect tweet data while avoiding detection through stealth techniques and human-like scrolling patterns.
+xScraper is a full-stack Twitter/X scraper with a React frontend and Python/FastAPI backend. The scraper uses Playwright for browser automation, intercepting GraphQL API responses (not DOM scraping) to collect tweet data while avoiding detection through stealth techniques and human-like scrolling patterns.
 
 ## Commands
 
 ```bash
-# Install dependencies
+# ── Backend ──────────────────────────────────────────────
+cd backend
 pip install -r requirements.txt
+playwright install chromium --with-deps
+python run.py                        # starts FastAPI on :8000
 
-# Run scraper (default: headless mode)
-python main.py
+# ── Frontend ─────────────────────────────────────────────
+cd frontend
+npm install
+npm run dev                          # starts Next.js on :3000
 
-# Monitor progress in separate terminal
-python monitor.py
-
-# Generate cookies locally (run once, then upload to server)
-python get_cookies.py
-
-# First-time setup: set HEADLESS=False in config.py, run main.py, log in manually
+# ── Production ───────────────────────────────────────────
+docker-compose up --build
 ```
 
 ## Architecture
 
 ```
-main.py           → Async orchestrator (entry point)
-    ↓
-browser.py        → Chromium launch with stealth patches, cookie management
-    ↓
-scroller.py       → Profile navigation, infinite scroll loop
-    ↓
-interceptor.py    → XHR response interception, GraphQL tweet extraction
-    ↓
-storage.py        → JSON/CSV persistence with deduplication
-    ↓
-logger.py         → Dual logging (stdout + scraper.log)
-
-Utilities:
-get_cookies.py    → Generate session cookies (run locally, upload to server)
-monitor.py        → Real-time progress dashboard
+xScraper/
+├── backend/
+│   ├── run.py                   ← uvicorn entry point
+│   ├── app/
+│   │   ├── api.py               ← FastAPI app + SSE endpoints
+│   │   ├── cookies.py           ← Login flow, cookie management
+│   │   └── scraper/
+│   │       ├── config.py        ← Infrastructure defaults + ScrapeParams dataclass
+│   │       ├── browser.py       ← Stealth Chromium launch
+│   │       ├── scroller.py      ← Infinite scroll loop with progress callbacks
+│   │       ├── interceptor.py   ← GraphQL XHR interception + UserCollector
+│   │       ├── storage.py       ← JSON/CSV persistence with dedup
+│   │       └── logger.py        ← Dual logging (stdout + file)
+│   └── data/                    ← Output files (gitignored)
+├── frontend/
+│   ├── src/app/
+│   │   ├── page.tsx             ← Landing page (scrape form + results)
+│   │   └── analyze/page.tsx     ← Phase 2 placeholder
+│   ├── src/components/
+│   │   ├── scrape-form.tsx      ← Handle input, tweet count, headless/manual
+│   │   ├── progress-feed.tsx    ← SSE progress display
+│   │   └── results-summary.tsx  ← Stats cards
+│   └── src/lib/api.ts           ← FastAPI client + SSE reader
+├── .env                         ← ENABLE_MANUAL_MODE, DEBUG_MODE
+└── docker-compose.yml
 ```
 
-**Data flow**: Browser launches → Navigate to profile → Scroll triggers XHR → Intercept GraphQL responses → Extract tweets → Merge with existing data → Save JSON/CSV
+### Data Flow
+
+```
+React UI → POST /api/scrape (SSE) → FastAPI
+  → Playwright browser launches
+    → Navigate to X profile
+      → Scroll triggers GraphQL XHR
+        → interceptor.py extracts tweets
+          → SSE events stream to frontend
+            → storage.py saves to data/
+```
+
+## API Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/health` | Liveness check |
+| GET | `/api/config` | Returns `{manual_mode_available, cookies_present}` |
+| POST | `/api/login` | Triggers Playwright login window |
+| POST | `/api/scrape` | SSE stream — accepts `{target_handle, max_tweets, headless}` |
+
+### SSE Event Types
+
+- `progress` — `{new, total, elapsed_seconds}`
+- `rate_limited` — `{empty_scrolls, total, elapsed_seconds}`
+- `auth_failed` — `{reason}`
+- `complete` — `{total, stats}`
+- `error` — `{message}`
 
 ## Key Patterns
 
-- **XHR Interception over DOM scraping**: Intercepts `graphql/.../UserTweets` responses for structured JSON data
-- **Callback-based collection**: `interceptor.attach_interceptor(page, callback)` fires as tweets arrive during scrolling
-- **Session persistence**: Cookies saved to `session_cookies.json` for reuse across runs
-- **Data accumulation**: `storage.py` merges new tweets with existing `tweets.json` (deduplicates by tweet_id)
-- **Termination**: Stops at `MAX_TWEETS` or after 5 consecutive empty scrolls
+- **Per-request config**: User-controllable settings (`target_handle`, `max_tweets`, `headless`) passed via `ScrapeParams` dataclass; infrastructure settings stay in `config.py`
+- **SSE streaming**: Long-running scrape streams progress events to frontend via `StreamingResponse`
+- **Single scrape lock**: Only one scrape at a time (`asyncio.Lock`)
+- **Auth failure detection**: Checks for login redirect after navigation + validates first GraphQL response
+- **UserCollector**: Per-run instance (not module global) for safe concurrent runs in the future
+- **Manual mode gating**: `ENABLE_MANUAL_MODE` env var controls both backend enforcement and frontend visibility
 
-## Server Deployment Workflow
+## Configuration
 
-1. **Local**: Run `python get_cookies.py` → log in manually → `session_cookies.json` created
-2. **Upload**: `scp session_cookies.json user@server:/path/to/project/`
-3. **Server**: Install with `playwright install chromium --with-deps` (the `--with-deps` flag installs system libs like `libglib2.0`, `libnss3` required on Linux)
-4. **Run**: `python main.py` (headless, no display needed)
+### Environment Variables (.env)
 
-**Note**: The `--disable-gpu` flag in `browser.py` is essential for VPS/cloud servers without GPU support.
+- `ENABLE_MANUAL_MODE` — Show "Manual" browser option (local dev only)
+- `DEBUG_MODE` — Log raw GraphQL responses to scraper.log
 
-## Configuration (config.py)
+### Infrastructure Defaults (config.py)
 
-All settings centralized in `config.py`:
-- `DEBUG_MODE` - Enable verbose logging of raw GraphQL responses and tweet node structures
-- `TARGET_HANDLE` - Profile to scrape (no @)
-- `MAX_TWEETS` - Collection limit
-- `HEADLESS` - True for headless, False for visible browser
-- `SCROLL_DELAY_MIN/MAX` - Human-like randomization
-- `XHR_INTERCEPT_PATTERNS` - GraphQL endpoints to capture
+- `SCROLL_DELAY_MIN/MAX` — Human-like randomization (1.5–3.5s)
+- `USER_AGENT` — Real Chrome user-agent string
+- `XHR_INTERCEPT_PATTERNS` — GraphQL endpoints to capture
+- `PAGE_LOAD_TIMEOUT` — 60s page load timeout
 
 ## Anti-Detection
 
 - Chromium flag: `--disable-blink-features=AutomationControlled`
 - playwright-stealth patches (navigator, WebGL, canvas fingerprinting)
-- Real Chrome user-agent, randomized scroll delays
+- Real Chrome user-agent, randomized scroll delays (600–900px, 1.5–3.5s)
+
+## Output Files (backend/data/)
+
+- `tweets.json` — Full structured tweet data
+- `tweets.csv` — Spreadsheet-friendly format
+- `users.json` — Deduplicated user profiles
+- `session_cookies.json` — Browser session (auto-saved)
+- `scraper.log` — Persistent log file
 
 ## Tweet Data Schema
 
@@ -115,11 +156,3 @@ All settings centralized in `config.py`:
   "tweet_url": "string"
 }
 ```
-
-## Output Files
-
-- `tweets.json` - Full structured tweet data
-- `tweets.csv` - Spreadsheet-friendly format
-- `users.json` - Deduplicated user profiles collected during scraping
-- `session_cookies.json` - Browser session (auto-saved)
-- `scraper.log` - Persistent log file (includes debug output when `DEBUG_MODE=True`)

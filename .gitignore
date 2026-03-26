@@ -1,19 +1,26 @@
-# credentials - never commit these
+# credentials
 session_cookies.json
+.env
 
-# scraped output
+# scraped output (root-level legacy + backend/data/)
 tweets.json
 tweets.csv
 users.json
-session_cookies.json
 scraper.log
+backend/data/*
+!backend/data/.gitkeep
 
 # python
 venv/
+.venv/
 __pycache__/
 *.pyc
 *.pyo
-.env
+
+# node / frontend
+frontend/node_modules/
+frontend/.next/
+frontend/out/
 
 # os
 .DS_Store
